@@ -7,7 +7,7 @@ A decentralized lottery application built with React, Vite, and smart contracts.
 ## Features
 
 - **Web3 Integration**: Connect with MetaMask wallet
-- **Smart Contract Interaction**: Built on Ethereum blockchain
+- **Smart Contract Interaction**: Built on Ethereum blockchain 
 - **Lottery System**: 
   - Players enter by sending minimum 0.01 ETH
   - Owner can pick random winners
