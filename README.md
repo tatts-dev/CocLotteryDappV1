@@ -1,4 +1,6 @@
-<img width="500" height="500" alt="ChanceOnChainLogo2" src="https://github.com/user-attachments/assets/4eb29a70-e0f1-4556-b3b8-b2e1d156ae6f" />  
+<div align="center">
+  <img width="500" height="500" alt="ChanceOnChainLogo2" src="https://github.com/user-attachments/assets/4eb29a70-e0f1-4556-b3b8-b2e1d156ae6f" /> 
+</div>
 
 # ChanceOnChain - Decentralized Lottery DApp
 
@@ -35,7 +37,7 @@ A decentralized lottery application built with React, Vite, and smart contracts.
 1. **Clone the repository**
    ```bash
    git clone <repository-url>
-   cd chancev1app
+   cd CocLotteryDappV1
    ```
 2. **Install dependencies**
    ```bash
@@ -65,8 +67,6 @@ The contract is deployed at: 0xA64A55ed006B390D21eB56E64188Cd246ca65909
 ## Available Scripts
 - npm run dev - Start development server
 - npm run build - Build for production
-- npm run preview - Preview production build
-- npm run lint - Run ESLint
 
 ## Environment Setup
 1. MetaMask Configuration :
@@ -74,6 +74,7 @@ The contract is deployed at: 0xA64A55ed006B390D21eB56E64188Cd246ca65909
    - Install MetaMask browser extension
    - Connect to Ethereum testnet (Sepolia recommended)
    - Ensure you have testnet ETH for transactions
+   - 
 2. Network Configuration :
    
    - The app works with Ethereum mainnet and testnets
