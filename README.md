@@ -1,6 +1,6 @@
 <img width="500" height="500" alt="ChanceOnChainLogo2" src="https://github.com/user-attachments/assets/4eb29a70-e0f1-4556-b3b8-b2e1d156ae6f" />  
 
-# ChanceV1 - Decentralized Lottery DApp
+# ChanceOnChain - Decentralized Lottery DApp
 
 A decentralized lottery application built with React, Vite, and smart contracts. Players can enter the lottery by sending ETH, and the owner can pick a random winner who receives the entire prize pool.
 
@@ -47,7 +47,7 @@ A decentralized lottery application built with React, Vite, and smart contracts.
    ```
 4. **Open your browser and navigate to**
    ```
-   http://localhost:3000
+   http://localhost:xxxx
    ```
 
 ## Smart Contract
@@ -87,4 +87,4 @@ This project is licensed under the MIT License.
 This is a demonstration project. Use at your own risk. Always test thoroughly on testnets before deploying to mainnet.
 
 ### Author
-Thato Mashifana/ AfricasblockchainClub
+Thato Mashifana / AfricasblockchainClub
