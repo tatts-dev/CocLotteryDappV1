@@ -1,6 +1,4 @@
-<div align="center">
-  <img src="https://i.imgur.com/your-logo-url.png" alt="OnChain Logo" width="200" height="auto" />
-</div>  
+<img width="500" height="500" alt="ChanceOnChainLogo2" src="https://github.com/user-attachments/assets/4eb29a70-e0f1-4556-b3b8-b2e1d156ae6f" />  
 
 # ChanceV1 - Decentralized Lottery DApp
 
