@@ -3,7 +3,7 @@ import { ethers } from 'ethers';
 
 const Web3Context = createContext();
 
-const CONTRACT_ADDRESS = '0xA64A55ed006B390D21eB56E64188Cd246ca65909';
+const CONTRACT_ADDRESS = '0x5Ec44e535e1634A478ca1b8bdF5cc1d9d6D92697';
 
 const CONTRACT_ABI = [
   {
@@ -156,7 +156,42 @@ export const Web3Provider = ({ children }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  
+  const switchToSupportedNetwork = async () => {
+    try {
+    
+      await window.ethereum.request({
+        method: 'wallet_switchEthereumChain',
+        params: [{ chainId: '0x8274f' }], 
+      });
+    } catch (switchError) {
+     
+      if (switchError.code === 4902) {
+        try {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [
+              {
+                chainId: '0x8274f',
+                chainName: 'Scroll Sepolia Testnet',
+                nativeCurrency: {
+                  name: 'Ethereum',
+                  symbol: 'ETH',
+                  decimals: 18,
+                },
+                rpcUrls: ['https://sepolia-rpc.scroll.io/'],
+                blockExplorerUrls: ['https://sepolia.scrollscan.com/'],
+              },
+            ],
+          });
+        } catch (addError) {
+          throw new Error('Failed to add Scroll Sepolia network to MetaMask');
+        }
+      } else {
+        throw new Error('Failed to switch to Scroll Sepolia network');
+      }
+    }
+  };
+
   const connectWallet = async () => {
     try {
       setLoading(true);
@@ -166,47 +201,45 @@ export const Web3Provider = ({ children }) => {
         throw new Error('MetaMask is not installed');
       }
       
-      const provider = new ethers.BrowserProvider(window.ethereum);
-      const accounts = await provider.send('eth_requestAccounts', []);
+      // Request account access first
+      const accounts = await window.ethereum.request({
+        method: 'eth_requestAccounts'
+      });
       
       if (accounts.length === 0) {
         throw new Error('No accounts found');
       }
       
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const network = await provider.getNetwork();
+      const chainId = Number(network.chainId);
+      
+      // Check if current network is supported
+      if (!SUPPORTED_NETWORKS[chainId]) {
+        // Prompt user to switch network
+        await switchToSupportedNetwork();
+        // ✅ Recursively call connectWallet after network switch
+        return await connectWallet();
+      }
+      
       const signer = await provider.getSigner();
       const account = await signer.getAddress();
       
-      // 🔍 CRITICAL DEBUGGING - Check network and contract
-      const network = await provider.getNetwork();
-      console.log('🌐 Connected to network:', network.chainId, network.name);
+      // Use network-specific contract address
+      const contractAddress = SUPPORTED_NETWORKS[chainId].contractAddress;
       
       // Check if contract exists
-      const contractCode = await provider.getCode(CONTRACT_ADDRESS);
-      console.log('📄 Contract code exists:', contractCode !== '0x');
-      console.log('📄 Contract code length:', contractCode.length);
-      
+      const contractCode = await provider.getCode(contractAddress);
       if (contractCode === '0x') {
-        throw new Error(`No contract found at ${CONTRACT_ADDRESS} on network ${network.name}`);
+        throw new Error(`Contract not deployed on ${SUPPORTED_NETWORKS[chainId].name}`);
       }
       
-      const contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+      const contract = new ethers.Contract(contractAddress, CONTRACT_ABI, signer);
       
-      // 🧪 Test contract methods
       try {
-        console.log('🧪 Testing contract methods...');
-        const balance = await contract.getBalance();
-        console.log('✅ getBalance works:', ethers.formatEther(balance));
-        
-        const owner = await contract.owner();
-        console.log('✅ owner works:', owner);
-        
-        // 🔍 CRITICAL: Check if enter method exists
-        console.log('🔍 Checking enter method...');
-        console.log('📋 Contract enter function:', typeof contract.enter);
-        console.log('📋 Contract pickWinner function:', typeof contract.pickWinner);
-        
+        await contract.getBalance();
+        await contract.owner();
       } catch (testError) {
-        console.error('❌ Contract method test failed:', testError);
         throw new Error('Contract methods not working - wrong ABI or contract');
       }
       
@@ -239,7 +272,7 @@ export const Web3Provider = ({ children }) => {
       if (accounts.length === 0) {
         disconnectWallet();
       } else {
-        setAccount(accounts[0]);
+        setAccount(accounts[0]); // Only updates account, doesn't recreate contract
       }
     };
 
@@ -289,4 +322,14 @@ export const useWeb3 = () => {
     throw new Error('useWeb3 must be used within a Web3Provider');
   }
   return context;
+};
+
+// Around line 331 - Update SUPPORTED_NETWORKS contractAddress
+const SUPPORTED_NETWORKS = {
+  534351: { // Scroll Sepolia
+    name: 'Scroll Sepolia',
+    contractAddress: '0x5Ec44e535e1634A478ca1b8bdF5cc1d9d6D92697',
+    rpcUrl: 'https://sepolia-rpc.scroll.io/',
+    blockExplorer: 'https://sepolia.scrollscan.com'
+  }
 };
