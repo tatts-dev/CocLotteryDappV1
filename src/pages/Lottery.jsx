@@ -29,7 +29,7 @@ const Lottery = () => {
     previousWinner: null,
     owner: null
   });
-  const [entryAmount, setEntryAmount] = useState('0.001');
+  const [entryAmount, setEntryAmount] = useState('0.00001');
  
   const [enterLoading, setEnterLoading] = useState(false);
   const [pickWinnerLoading, setPickWinnerLoading] = useState(false);
@@ -120,10 +120,14 @@ const Lottery = () => {
     try {
       setEnterLoading(true);
       
-
       const entryValue = parseFloat(entryAmount);
       if (entryValue <= 0) {
-        showNotification('Entry amount must be greater than 0', 'error');
+        showNotification('Please enter a valid amount greater than 0', 'error');
+        return;
+      }
+      
+      if (entryValue <= 0.0001) {
+        showNotification('Minimum entry amount is 0.0001 ETH. Please increase your entry amount.', 'error');
         return;
       }
       
@@ -132,14 +136,13 @@ const Lottery = () => {
       console.log('Contract address:', contract.target || contract.address);
       
       console.log('Calling contract.enter()');
-
+  
       const gasEstimate = await contract.enter.estimateGas({
         value: ethers.parseEther(entryAmount.toString())
       });
       
       console.log('Gas estimate for ENTER function:', gasEstimate.toString());
       
-
       const tx = await contract.enter({
         value: ethers.parseEther(entryAmount.toString()),
         gasLimit: gasEstimate * 120n / 100n 
@@ -159,18 +162,32 @@ const Lottery = () => {
       console.error('Full error:', err);
       
       let errorMessage = 'Failed to enter lottery';
+      let errorType = 'error';
       
+      // Handle specific error cases with user-friendly messages
       if (err.code === 'INSUFFICIENT_FUNDS') {
-        errorMessage = 'Insufficient funds in your wallet.';
-      } else if (err.code === 'USER_REJECTED') {
-        errorMessage = 'Transaction cancelled by user.';
+        errorMessage = 'Insufficient funds! You need more ETH in your wallet to cover the entry amount plus gas fees.';
+      } else if (err.code === 'USER_REJECTED' || err.code === 4001) {
+        errorMessage = 'Transaction cancelled. You rejected the transaction in MetaMask.';
+        errorType = 'info';
+      } else if (err.code === -32603 || err.message?.includes('could not coalesce error') || err.message?.includes('Cannot use \'in\' operator')) {
+        errorMessage = 'Transaction submitted. Please wait for it to be processed or reload the page once';
+      } else if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
+        errorMessage = 'Network timeout. Please wait a moment and try again.';
+      } else if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
+        errorMessage = 'Unable to estimate gas fees. Please try again in a few minutes.';
       } else if (err.reason) {
-        errorMessage = `Contract error: ${err.reason}`;
-      } else {
-        errorMessage = `Error: ${err.message}`;
+        // Handle contract-specific errors
+        if (err.reason.includes('insufficient funds')) {
+          errorMessage = 'Transaction submitted. Please wait for it to be processed or reload the page once';
+        } else if (err.reason.includes('gas')) {
+          errorMessage = 'Gas estimation failed. Try increasing your gas limit in MetaMask or wait for network congestion to reduce.';
+        } else {
+          errorMessage = `Contract Error: ${err.reason}. Please check the transaction requirements and try again.`;
+        }
       }
       
-      showNotification(errorMessage, 'error');
+      showNotification(errorMessage, errorType);
     } finally {
       setEnterLoading(false);
     }
@@ -370,11 +387,11 @@ const Lottery = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.001"
+                  step="0.00001"
                   value={entryAmount}
                   onChange={(e) => setEntryAmount(e.target.value)}
                   className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-purple-200 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-base sm:text-lg bg-white/80 backdrop-blur-sm transition-all duration-300"
-                  placeholder="0.001"
+                  placeholder="0.00001"
                 />
                 <button
                   onClick={enterLottery}
