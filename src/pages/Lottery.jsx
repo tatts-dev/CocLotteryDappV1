@@ -10,18 +10,6 @@ const Lottery = () => {
     console.log('Lottery component state:', { account, contract, loading, error });
   }, [account, contract, loading, error]);
   
-  <button
-    onClick={() => {
-      console.log('Connect wallet button clicked');
-      connectWallet().catch(err => {
-        console.error('Connect wallet failed:', err);
-      });
-    }}
-    disabled={loading}
-    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 sm:px-8 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 disabled:opacity-50 active:scale-95"
-  >
-    {loading ? 'Connecting...' : 'Connect Wallet'}
-  </button>
   const [lotteryData, setLotteryData] = useState({
     lotteryId: 0,
     balance: '0',
@@ -126,8 +114,8 @@ const Lottery = () => {
         return;
       }
       
-      if (entryValue <= 0.0001) {
-        showNotification('Minimum entry amount is 0.0001 ETH. Please increase your entry amount.', 'error');
+      if (entryValue <= 0.00001) {
+        showNotification('⚠️ Entry amount must be greater than 0.00001 ETH', 'error');
         return;
       }
       
@@ -164,27 +152,15 @@ const Lottery = () => {
       let errorMessage = 'Failed to enter lottery';
       let errorType = 'error';
       
-      // Handle specific error cases with user-friendly messages
       if (err.code === 'INSUFFICIENT_FUNDS') {
         errorMessage = 'Insufficient funds! You need more ETH in your wallet to cover the entry amount plus gas fees.';
       } else if (err.code === 'USER_REJECTED' || err.code === 4001) {
         errorMessage = 'Transaction cancelled. You rejected the transaction in MetaMask.';
         errorType = 'info';
-      } else if (err.code === -32603 || err.message?.includes('could not coalesce error') || err.message?.includes('Cannot use \'in\' operator')) {
-        errorMessage = 'Transaction submitted. Please wait for it to be processed or reload the page once';
-      } else if (err.code === 'NETWORK_ERROR' || err.code === 'TIMEOUT') {
-        errorMessage = 'Network timeout. Please wait a moment and try again.';
-      } else if (err.code === 'UNPREDICTABLE_GAS_LIMIT') {
-        errorMessage = 'Unable to estimate gas fees. Please try again in a few minutes.';
+      } else if (err.reason && err.reason.includes('gas')) {
+        errorMessage = 'Gas estimation failed. Try increasing your gas limit in MetaMask or wait for network congestion to reduce.';
       } else if (err.reason) {
-        // Handle contract-specific errors
-        if (err.reason.includes('insufficient funds')) {
-          errorMessage = 'Transaction submitted. Please wait for it to be processed or reload the page once';
-        } else if (err.reason.includes('gas')) {
-          errorMessage = 'Gas estimation failed. Try increasing your gas limit in MetaMask or wait for network congestion to reduce.';
-        } else {
-          errorMessage = `Contract Error: ${err.reason}. Please check the transaction requirements and try again.`;
-        }
+        errorMessage = `Contract Error: ${err.reason}. Please check the transaction requirements and try again.`;
       }
       
       showNotification(errorMessage, errorType);
@@ -340,10 +316,30 @@ const Lottery = () => {
               {loading ? (
                 <LoadingSkeleton />
               ) : lotteryData.previousWinner ? (
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-purple-200">
-                  <p className="text-xs sm:text-sm font-mono text-purple-800 break-all font-medium leading-relaxed">
-                    {lotteryData.previousWinner}
-                  </p>
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-purple-200">
+                    <div className="mb-3">
+                      <p className="text-xs sm:text-sm text-purple-600 font-semibold mb-2">Winner Address:</p>
+                      <p className="text-xs sm:text-sm font-mono text-purple-800 break-all font-medium leading-relaxed">
+                        {lotteryData.previousWinner}
+                      </p>
+                    </div>
+                    <div className="border-t border-purple-200 pt-3">
+                      <p className="text-xs sm:text-sm text-purple-600 font-semibold mb-2">Lottery Round:</p>
+                      <p className="text-sm sm:text-base font-bold text-purple-800">
+                        #{parseInt(lotteryData.lotteryId) - 1}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-green-200">
+                    <p className="text-xs sm:text-sm text-green-600 font-semibold mb-2">Current Prize Pool:</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-700">
+                      {lotteryData.balance} ETH
+                    </p>
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      *Winner takes the entire pool
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-24 sm:h-32">

@@ -324,9 +324,8 @@ export const useWeb3 = () => {
   return context;
 };
 
-// Around line 331 - Update SUPPORTED_NETWORKS contractAddress
 const SUPPORTED_NETWORKS = {
-  534351: { // Scroll Sepolia
+  534351: { 
     name: 'Scroll Sepolia',
     contractAddress: '0x5Ec44e535e1634A478ca1b8bdF5cc1d9d6D92697',
     rpcUrl: 'https://sepolia-rpc.scroll.io/',
