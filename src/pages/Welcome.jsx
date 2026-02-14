@@ -11,7 +11,7 @@ const Welcome = () => {
   return (
     <div className="min-h-screen flex flex-col items-center justify-center bg-gradient-to-br from-white via-purple-100 to-purple-200 px-4 sm:px-6 lg:px-8">
       <div className="text-center max-w-4xl mx-auto w-full">
-        {/* Centered Logo - Made Even Bigger */}
+        {/* Centered Logo */}
         <div className="mb-8 sm:mb-12">
           <img 
             src="/logo.png" 

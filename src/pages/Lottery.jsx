@@ -10,18 +10,6 @@ const Lottery = () => {
     console.log('Lottery component state:', { account, contract, loading, error });
   }, [account, contract, loading, error]);
   
-  <button
-    onClick={() => {
-      console.log('Connect wallet button clicked');
-      connectWallet().catch(err => {
-        console.error('Connect wallet failed:', err);
-      });
-    }}
-    disabled={loading}
-    className="bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white px-4 py-2 sm:px-8 sm:py-3 rounded-xl sm:rounded-2xl font-semibold text-sm sm:text-base transition-all duration-300 transform hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 disabled:opacity-50 active:scale-95"
-  >
-    {loading ? 'Connecting...' : 'Connect Wallet'}
-  </button>
   const [lotteryData, setLotteryData] = useState({
     lotteryId: 0,
     balance: '0',
@@ -29,7 +17,7 @@ const Lottery = () => {
     previousWinner: null,
     owner: null
   });
-  const [entryAmount, setEntryAmount] = useState('0.001');
+  const [entryAmount, setEntryAmount] = useState('0.00001');
  
   const [enterLoading, setEnterLoading] = useState(false);
   const [pickWinnerLoading, setPickWinnerLoading] = useState(false);
@@ -120,10 +108,14 @@ const Lottery = () => {
     try {
       setEnterLoading(true);
       
-
       const entryValue = parseFloat(entryAmount);
       if (entryValue <= 0) {
-        showNotification('Entry amount must be greater than 0', 'error');
+        showNotification('Please enter a valid amount greater than 0', 'error');
+        return;
+      }
+      
+      if (entryValue <= 0.00001) {
+        showNotification('⚠️ Entry amount must be greater than 0.00001 ETH', 'error');
         return;
       }
       
@@ -132,14 +124,13 @@ const Lottery = () => {
       console.log('Contract address:', contract.target || contract.address);
       
       console.log('Calling contract.enter()');
-
+  
       const gasEstimate = await contract.enter.estimateGas({
         value: ethers.parseEther(entryAmount.toString())
       });
       
       console.log('Gas estimate for ENTER function:', gasEstimate.toString());
       
-
       const tx = await contract.enter({
         value: ethers.parseEther(entryAmount.toString()),
         gasLimit: gasEstimate * 120n / 100n 
@@ -159,18 +150,20 @@ const Lottery = () => {
       console.error('Full error:', err);
       
       let errorMessage = 'Failed to enter lottery';
+      let errorType = 'error';
       
       if (err.code === 'INSUFFICIENT_FUNDS') {
-        errorMessage = 'Insufficient funds in your wallet.';
-      } else if (err.code === 'USER_REJECTED') {
-        errorMessage = 'Transaction cancelled by user.';
+        errorMessage = 'Insufficient funds! You need more ETH in your wallet to cover the entry amount plus gas fees.';
+      } else if (err.code === 'USER_REJECTED' || err.code === 4001) {
+        errorMessage = 'Transaction cancelled. You rejected the transaction in MetaMask.';
+        errorType = 'info';
+      } else if (err.reason && err.reason.includes('gas')) {
+        errorMessage = 'Gas estimation failed. Try increasing your gas limit in MetaMask or wait for network congestion to reduce.';
       } else if (err.reason) {
-        errorMessage = `Contract error: ${err.reason}`;
-      } else {
-        errorMessage = `Error: ${err.message}`;
+        errorMessage = `Contract Error: ${err.reason}. Please check the transaction requirements and try again.`;
       }
       
-      showNotification(errorMessage, 'error');
+      showNotification(errorMessage, errorType);
     } finally {
       setEnterLoading(false);
     }
@@ -323,10 +316,30 @@ const Lottery = () => {
               {loading ? (
                 <LoadingSkeleton />
               ) : lotteryData.previousWinner ? (
-                <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-purple-200">
-                  <p className="text-xs sm:text-sm font-mono text-purple-800 break-all font-medium leading-relaxed">
-                    {lotteryData.previousWinner}
-                  </p>
+                <div className="space-y-4">
+                  <div className="bg-gradient-to-r from-purple-50 to-purple-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-purple-200">
+                    <div className="mb-3">
+                      <p className="text-xs sm:text-sm text-purple-600 font-semibold mb-2">Winner Address:</p>
+                      <p className="text-xs sm:text-sm font-mono text-purple-800 break-all font-medium leading-relaxed">
+                        {lotteryData.previousWinner}
+                      </p>
+                    </div>
+                    <div className="border-t border-purple-200 pt-3">
+                      <p className="text-xs sm:text-sm text-purple-600 font-semibold mb-2">Lottery Round:</p>
+                      <p className="text-sm sm:text-base font-bold text-purple-800">
+                        #{parseInt(lotteryData.lotteryId) - 1}
+                      </p>
+                    </div>
+                  </div>
+                  <div className="bg-gradient-to-r from-green-50 to-green-100 p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-green-200">
+                    <p className="text-xs sm:text-sm text-green-600 font-semibold mb-2">Current Prize Pool:</p>
+                    <p className="text-lg sm:text-xl font-bold text-green-700">
+                      {lotteryData.balance} ETH
+                    </p>
+                    <p className="text-xs text-green-600 mt-1 font-medium">
+                      *Winner takes the entire pool
+                    </p>
+                  </div>
                 </div>
               ) : (
                 <div className="flex items-center justify-center h-24 sm:h-32">
@@ -370,11 +383,11 @@ const Lottery = () => {
                 </label>
                 <input
                   type="number"
-                  step="0.001"
+                  step="0.00001"
                   value={entryAmount}
                   onChange={(e) => setEntryAmount(e.target.value)}
                   className="w-full px-4 sm:px-6 py-3 sm:py-4 border-2 border-purple-200 rounded-xl sm:rounded-2xl focus:outline-none focus:ring-4 focus:ring-purple-500/20 focus:border-purple-500 text-base sm:text-lg bg-white/80 backdrop-blur-sm transition-all duration-300"
-                  placeholder="0.001"
+                  placeholder="0.00001"
                 />
                 <button
                   onClick={enterLottery}
